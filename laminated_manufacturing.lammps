@@ -1,0 +1,205 @@
+# LAMINATED ADDITIVE MANUFACTURING - LARGER BEAM RADIUS
+# Wider concentrated beam, high power, clearly visible weld pool
+
+# Initialize simulation
+units           metal
+dimension       3
+boundary        p p p
+atom_style      atomic
+
+# Define lattice
+lattice         fcc 4.05
+region          box block 0 100 0 40 0 6
+create_box      1 box
+
+# Create THIN plates with small gap
+# Bottom plate: Z = 0 to 2.5
+# Top plate: Z = 2.7 to 5.2
+region          plate1 block 0 100 0 40 0 2.5
+region          plate2 block 0 100 0 40 2.7 6
+create_atoms    1 region plate1
+create_atoms    1 region plate2
+
+# Set mass for aluminum
+mass            1 26.9815
+
+# Define EAM potential
+pair_style      eam/alloy
+pair_coeff      * * Al99.eam.alloy Al
+
+# Define groups
+group           plate1 region plate1
+group           plate2 region plate2
+
+# Edge regions for heat sinks
+region          bottom_edge block 0 100 0 40 0 0.5
+region          top_edge block 0 100 0 40 5.5 6
+region          left_edge block 0 3.0 0 40 0 6
+region          right_edge block 97.0 100 0 40 0 6
+region          front_edge block 0 100 0 3.0 0 6
+region          back_edge block 0 100 37.0 40 0 6
+region          edges union 6 bottom_edge top_edge left_edge right_edge front_edge back_edge
+group           edges region edges
+group           bulk subtract all edges
+
+# LARGER BEAM RADIUS - More visible laser spot
+# Centerline at Y=20, Width: Y=17-23 (6 units diameter)
+# Interface: Z=1.5-4.0 (2.5 units - penetrates both plates)
+# 10 positions for smooth movement
+region          weld_1 block 5 15 17 23 1.5 4.0
+region          weld_2 block 15 25 17 23 1.5 4.0
+region          weld_3 block 25 35 17 23 1.5 4.0
+region          weld_4 block 35 45 17 23 1.5 4.0
+region          weld_5 block 45 55 17 23 1.5 4.0
+region          weld_6 block 55 65 17 23 1.5 4.0
+region          weld_7 block 65 75 17 23 1.5 4.0
+region          weld_8 block 75 85 17 23 1.5 4.0
+region          weld_9 block 85 95 17 23 1.5 4.0
+
+# Define weld groups
+group           weld_1 region weld_1
+group           weld_2 region weld_2
+group           weld_3 region weld_3
+group           weld_4 region weld_4
+group           weld_5 region weld_5
+group           weld_6 region weld_6
+group           weld_7 region weld_7
+group           weld_8 region weld_8
+group           weld_9 region weld_9
+group           all_weld union weld_1 weld_2 weld_3 weld_4 weld_5 weld_6 weld_7 weld_8 weld_9
+
+# Initial velocities
+velocity        all create 300.0 87654 dist gaussian
+
+# Integration
+fix             thermostat_edges edges nvt temp 300.0 300.0 0.1
+fix             dynamics_bulk bulk nve
+timestep        0.001
+
+# Computes
+compute         weld_temp all_weld temp
+compute         ke_per_atom all ke/atom
+compute         centro all centro/atom fcc
+compute         msd all msd
+
+# Per atom temperature in Kelvin
+variable        atom_temp atom c_ke_per_atom/1.5/8.617343e-5
+
+# Output
+thermo_style    custom step temp pe ke etotal press c_weld_temp
+thermo          100
+
+# Frequent dumps to see laser movement
+dump            1 all custom 200 laminated_welding.lammpstrj id type x y z c_ke_per_atom c_centro v_atom_temp
+dump_modify     1 element Al
+
+# Temperature-focused dump
+dump            temp all custom 300 temperature_field.lammpstrj id type x y z v_atom_temp c_ke_per_atom
+dump_modify     temp element Al
+
+restart         5000 restart.laminated
+
+# Initial equilibration
+print "Equilibration..."
+run             3000
+
+# HIGH-POWER LASER WELDING WITH LARGER BEAM
+print "High-power laser welding - Beam radius: 3 units"
+
+# Position 1
+print "Laser at X = 5-15, Temperature: 2800K"
+fix             laser_1 weld_1 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_1
+run             800
+
+# Position 2
+print "Laser at X = 15-25, Temperature: 2800K"
+fix             laser_2 weld_2 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_2
+run             800
+
+# Position 3
+print "Laser at X = 25-35, Temperature: 2800K"
+fix             laser_3 weld_3 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_3
+run             800
+
+# Position 4
+print "Laser at X = 35-45, Temperature: 2800K"
+fix             laser_4 weld_4 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_4
+run             800
+
+# Position 5
+print "Laser at X = 45-55, Temperature: 2800K"
+fix             laser_5 weld_5 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_5
+run             800
+
+# Position 6
+print "Laser at X = 55-65, Temperature: 2800K"
+fix             laser_6 weld_6 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_6
+run             800
+
+# Position 7
+print "Laser at X = 65-75, Temperature: 2800K"
+fix             laser_7 weld_7 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_7
+run             800
+
+# Position 8
+print "Laser at X = 75-85, Temperature: 2800K"
+fix             laser_8 weld_8 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_8
+run             800
+
+# Position 9
+print "Laser at X = 85-95, Temperature: 2800K"
+fix             laser_9 weld_9 langevin 300.0 2800.0 0.03 48279
+run             3000
+unfix           laser_9
+run             800
+
+print "Laser pass completed - Starting cooling phase"
+
+# Gradual cooling to prevent cracking
+fix             cool_1 all_weld langevin 2800.0 1800.0 0.05 48279
+run             10000
+unfix           cool_1
+
+fix             cool_2 all_weld langevin 1800.0 1200.0 0.1 48279
+run             10000
+unfix           cool_2
+
+fix             cool_3 all_weld langevin 1200.0 700.0 0.1 48279
+run             12000
+unfix           cool_3
+
+fix             cool_4 all_weld langevin 700.0 300.0 0.1 48279
+run             15000
+unfix           cool_4
+
+# Final equilibration
+print "Final equilibration..."
+run             10000
+
+# Final analysis dump
+dump            final all custom 1000 final_structure.lammpstrj id type x y z c_centro v_atom_temp c_ke_per_atom
+dump_modify     final element Al
+
+run             5000
+
+write_data      final_laminated_structure.data
+
+print "Simulation complete"
+print "Beam radius: 3 units, Penetration depth: 2.5 units, Peak temperature: 2800K"
+print "Visualize using v_atom_temp for temperature or c_centro for defects"
